@@ -1,0 +1,14 @@
+{
+  "name": "dias",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "cli": "node cli/dist/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
