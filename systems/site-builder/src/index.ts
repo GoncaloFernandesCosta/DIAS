@@ -5,4 +5,5 @@ export {
   StaticHtmlSiteRenderer,
   type StaticHtmlSiteRendererOptions,
 } from './infrastructure/static-html-site-renderer';
+export { listThemes, selectThemeById, type Theme } from './infrastructure/themes';
 export { runSiteBuild } from './interface/site-build-runner';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ProposalCase, ProposalState, ProposalEventType } from '@dias/contracts';
+import { ProposalCase, ProposalState } from '@dias/contracts';
 import { CaseWorkflow, CaseWorkflowDeps } from '@dias/pipeline';
 import { InMemoryEventBus } from '@dias/pipeline';
 import { CaseRepository } from '@dias/pipeline';
@@ -33,6 +33,11 @@ function makeWorkflow(repo: CaseRepository) {
     },
     draftStep: {
       draft: async () => ({ channel: 'email', draftContent: 'draft' }),
+      draftVariants: async (_company, channel, count) =>
+        Array.from({ length: count }, (_, i) => ({
+          channel,
+          draftContent: `variant ${i}`,
+        })),
     },
     sendStep: {
       send: async () => ({ sentAt: new Date().toISOString(), messageId: 'm1' }),
@@ -58,17 +63,38 @@ function seedDraftedCase(repo: CaseRepository): ProposalCase {
   return entity;
 }
 
+function seedQualifiedCase(repo: CaseRepository, name = 'Qualified Co'): ProposalCase {
+  const entity = ProposalCase.discover({ companyName: name, source: 'test' });
+  entity.markEnriched({ contactEmail: 'q@b.com', siteOutdated: true });
+  entity.qualify({ reason: 'ok' });
+  repo.save(entity);
+  return entity;
+}
+
 describe('DashboardService', () => {
-  it('lists cases grouped into state columns', () => {
+  it('groups cases into stage columns', () => {
     const repo = new MemoryRepository();
     seedDraftedCase(repo);
     const service = new DashboardService(repo, makeWorkflow(repo));
 
     const state = service.listCases();
-    expect(state.total).toBe(1);
-    expect(state.columns[ProposalState.PROPOSAL_DRAFTED]).toHaveLength(1);
-    expect(state.canApprove).toBe(1);
-    expect(state.columns[ProposalState.PROPOSAL_DRAFTED][0].draftContent).toBe('proposal draft');
+    expect(state.totals.total).toBe(1);
+    const proposal = state.stages.find((s) => s.stage.id === 'proposal')!;
+    expect(proposal.count).toBe(1);
+    expect(proposal.cases[0].stateLabel).toBe('Proposal drafted');
+    expect(proposal.cases[0].stage).toBe('proposal');
+    expect(proposal.cases[0].progress).toBe(55);
+    expect(state.totals.canApprove).toBe(1);
+  });
+
+  it('exposes available actions per state', () => {
+    const repo = new MemoryRepository();
+    seedQualifiedCase(repo);
+    const service = new DashboardService(repo, makeWorkflow(repo));
+
+    const state = service.listCases();
+    const discovery = state.stages.find((s) => s.stage.id === 'discovery')!;
+    expect(discovery.cases[0].actions).toContain('build');
   });
 
   it('approves a PROPOSAL_DRAFTED case', () => {
@@ -83,6 +109,15 @@ describe('DashboardService', () => {
     );
   });
 
+  it('builds a site from a QUALIFIED case', async () => {
+    const repo = new MemoryRepository();
+    const entity = seedQualifiedCase(repo);
+    const service = new DashboardService(repo, makeWorkflow(repo));
+
+    const built = await service.buildSite(entity.getData().id, 'simple');
+    expect(built.getData().currentState).toBe(ProposalState.SITE_DRAFT_READY);
+  });
+
   it('does not approve cases not in PROPOSAL_DRAFTED', () => {
     const repo = new MemoryRepository();
     const entity = ProposalCase.discover({ companyName: 'X', source: 'test' });
@@ -93,11 +128,56 @@ describe('DashboardService', () => {
     expect(result.getData().currentState).toBe(ProposalState.DISCOVERED);
   });
 
-  it('runs the pipeline through the dashboard', async () => {
+  it('moves a RESPONDED case to WON via winCase', () => {
     const repo = new MemoryRepository();
+    const entity = ProposalCase.discover({ companyName: 'R', source: 'test' });
+    entity.markEnriched({ contactEmail: 'r@b.com', siteOutdated: false });
+    entity.qualify({ reason: 'ok' });
+    entity.startSiteBuild({ tier: 'simple' });
+    entity.siteDraftReady({ previewUrl: 'x', tier: 'simple' });
+    entity.draftProposal({ channel: 'email', draftContent: 'x' });
+    entity.approve({ approvedBy: 'a' });
+    entity.send({ channel: 'email', sentAt: 'now' });
+    entity.respond({ responseContent: 'yes', responseChannel: 'email' });
+    repo.save(entity);
+
     const service = new DashboardService(repo, makeWorkflow(repo));
-    const summary = await service.runPipeline({ limit: 5 });
-    expect(summary.total).toBe(0);
-    expect(summary.sent).toBe(0);
+    const won = service.winCase(entity.getData().id, 2500);
+    expect(won.getData().currentState).toBe(ProposalState.WON);
+
+    const state = service.listCases();
+    expect(state.totals.won).toBe(1);
+  });
+
+  it('lists themes passed to the service', () => {
+    const repo = new MemoryRepository();
+    const themes = [
+      { id: 'deep-navy', name: 'Deep Navy' },
+      { id: 'fresh-green', name: 'Fresh Green' },
+    ];
+    const service = new DashboardService(repo, makeWorkflow(repo), themes);
+    expect(service.listThemes()).toEqual(themes);
+  });
+
+  it('generates draft variants via the workflow and picks one', async () => {
+    const repo = new MemoryRepository();
+    const entity = seedQualifiedCase(repo);
+    const service = new DashboardService(repo, makeWorkflow(repo));
+
+    await service.buildSite(entity.getData().id, 'simple');
+    const variants = await service.draftVariants(entity.getData().id, 'email', 3);
+    expect(variants).toHaveLength(3);
+
+    const chosen = await service.chooseDraft(entity.getData().id, 0, 'email');
+    expect(chosen.getData().currentState).toBe(ProposalState.PROPOSAL_DRAFTED);
+  });
+
+  it('advances a case to a later stage', async () => {
+    const repo = new MemoryRepository();
+    const entity = seedQualifiedCase(repo);
+    const service = new DashboardService(repo, makeWorkflow(repo));
+
+    const advanced = await service.advanceToStage(entity.getData().id, 'building');
+    expect(advanced.getData().currentState).toBe(ProposalState.SITE_DRAFT_READY);
   });
 });

@@ -22,10 +22,10 @@ function makeService() {
   );
 }
 
-function makeCompany(name = 'TestCo') {
+function makeCompany(name = 'TestCo', industry = 'restaurants') {
   const entity = ProposalCase.discover({
     companyName: name,
-    industry: 'restaurants',
+    industry,
     region: 'Lisbon',
     website: 'https://old.example.com',
     source: 'test',
@@ -64,12 +64,74 @@ describe('SiteBuilderService', () => {
     const built = await service.buildSite(company, 'complex');
 
     const files = readdirSync(built.outputPath).sort();
-    expect(files).toEqual(['about.html', 'contact.html', 'index.html', 'services.html']);
+    expect(files).toEqual([
+      'about.html',
+      'contact.html',
+      'index.html',
+      'services.html',
+      'testimonials.html',
+    ]);
 
     const home = readFileSync(join(built.outputPath, 'index.html'), 'utf8');
     expect(home).toContain('about.html');
     expect(home).toContain('services.html');
     expect(home).toContain('contact.html');
+    expect(home).toContain('testimonials.html');
+  });
+
+  it('varies the design theme by industry', async () => {
+    const service = makeService();
+    const restaurants = await service.buildSite(makeCompany('Restaurante X'), 'simple');
+    const clinic = await service.buildSite(makeCompany('Clinic Y', 'healthcare'), 'simple');
+
+    const restaurantHtml = readFileSync(join(restaurants.outputPath, 'index.html'), 'utf8');
+    const clinicHtml = readFileSync(join(clinic.outputPath, 'index.html'), 'utf8');
+
+    expect(restaurantHtml).not.toEqual(clinicHtml);
+  });
+
+  it('includes industry-specific content', async () => {
+    const service = makeService();
+    const company = makeCompany('Pizzaria Bella');
+    const built = await service.buildSite(company, 'simple');
+    const html = readFileSync(join(built.outputPath, 'index.html'), 'utf8');
+
+    expect(html).toContain('Fresh ingredients');
+    expect(html).toContain('Daily lunch &amp; dinner menu');
+    expect(html).toContain('every plate tells a story');
+    expect(html).toContain('Pizzaria Bella');
+  });
+
+  it('renders rich sections on the single page', async () => {
+    const service = makeService();
+    const built = await service.buildSite(makeCompany(), 'simple');
+    const html = readFileSync(join(built.outputPath, 'index.html'), 'utf8');
+
+    expect(html).toContain('feature-grid');
+    expect(html).toContain('services-list');
+    expect(html).toContain('quote-grid');
+    expect(html).toContain('stats-grid');
+    expect(html).toContain('cta-band');
+    expect(html).toContain('contact-grid');
+  });
+
+  it('honours an explicit theme override', async () => {
+    const service = makeService();
+    const company = makeCompany('Theme Co');
+    const built = await service.buildSite(company, 'simple', 'deep-navy');
+    const html = readFileSync(join(built.outputPath, 'index.html'), 'utf8');
+
+    expect(html).toContain('#1e3a8a');
+    expect(html).not.toContain('#c2410c');
+  });
+
+  it('falls back to the industry theme for unknown theme ids', async () => {
+    const service = makeService();
+    const company = makeCompany('Restaurante X');
+    const built = await service.buildSite(company, 'simple', 'not-a-real-theme');
+    const html = readFileSync(join(built.outputPath, 'index.html'), 'utf8');
+
+    expect(html).toContain('#c2410c');
   });
 
   it('escapes HTML entities in company names', async () => {

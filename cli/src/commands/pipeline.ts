@@ -8,19 +8,28 @@ const pipelineRunCommand = new Command('run')
   .option('--keywords <keywords>', 'Search keywords')
   .option('--limit <number>', 'Max prospects', '50')
   .option('--tier <tier>', 'Site tier: simple or complex', 'simple')
+  .option('--theme <theme>', 'Theme id (e.g. modern-teal, deep-navy, warm-terracotta)')
+  .option(
+    '--stage <stage>',
+    'Stop after this stage: prospect | site | draft | send',
+    'send',
+  )
   .action(async (options) => {
     const container = createLocalContainer();
-    const summary = await container.workflow.run({
+    const base = {
       industry: options.industry,
       region: options.region,
       keywords: options.keywords,
       limit: Number(options.limit),
       tier: options.tier,
-    });
+      theme: options.theme,
+    };
+    const stopAt = options.stage === 'site' || options.stage === 'draft' ? options.stage : 'send';
+    const summary = await container.workflow.runThrough(base, options.stage === 'prospect' ? 'prospect' : stopAt);
 
-    console.log(`Pipeline run ${summary.runId} complete:`);
+    console.log(`Pipeline run ${summary.runId} complete (stage: ${options.stage}):`);
     console.log(`  total:   ${summary.total}`);
-    console.log(`  sent:    ${summary.sent}`);
+    if (options.stage === 'send') console.log(`  sent:    ${summary.sent}`);
     console.log(`  failed:  ${summary.failed}`);
     console.log();
 
@@ -33,6 +42,10 @@ const pipelineRunCommand = new Command('run')
       console.log();
       console.log('Errors:');
       for (const e of summary.errors) console.log(`  ${e.caseId}: ${e.message}`);
+    }
+    if (stopAt === 'site' || stopAt === 'draft') {
+      console.log();
+      console.log(`Hint: run "dias site build --case-id <id>" or "dias outreach send --case-id <id>" to continue per case.`);
     }
   });
 

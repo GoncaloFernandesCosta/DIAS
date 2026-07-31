@@ -5,6 +5,7 @@ export type SiteTier = 'simple' | 'complex';
 export interface SiteSpec {
   caseId: string;
   tier: SiteTier;
+  theme?: string;
   company: ProposalCaseData;
 }
 

@@ -5,6 +5,7 @@ import { LocalSearchAdapter } from '@dias/prospecting';
 import { StaticEnrichmentAdapter } from '@dias/prospecting';
 import { SiteBuilderService } from '@dias/site-builder';
 import { StaticHtmlSiteRenderer } from '@dias/site-builder';
+import { listThemes } from '@dias/site-builder';
 import { OutreachService } from '@dias/outreach';
 import { TemplateMessageGenerator } from '@dias/outreach';
 import { ConsoleNotificationProvider } from '@dias/outreach';
@@ -58,8 +59,12 @@ export function buildContainer(options: {
       runJob: (params) => prospectingService.runJob(params),
     },
     siteStep: {
-      buildSite: async (caseId, company, tier) => {
-        const built = await siteBuilder.buildSite(company as unknown as ProposalCaseData, tier);
+      buildSite: async (caseId, company, tier, theme) => {
+        const built = await siteBuilder.buildSite(
+          company as unknown as ProposalCaseData,
+          tier,
+          theme,
+        );
         return { previewUrl: built.previewUrl, tier: built.tier };
       },
     },
@@ -67,6 +72,18 @@ export function buildContainer(options: {
       draft: async (company, channel) => {
         const draft = await outreach.draft(company as unknown as ProposalCaseData, channel);
         return { channel: draft.channel, subject: draft.subject, draftContent: draft.draftContent };
+      },
+      draftVariants: async (company, channel, count) => {
+        const variants = await outreach.draftVariants(
+          company as unknown as ProposalCaseData,
+          channel,
+          count,
+        );
+        return variants.map((v) => ({
+          channel: v.channel,
+          subject: v.subject,
+          draftContent: v.draftContent,
+        }));
       },
     },
     sendStep: {
@@ -79,7 +96,7 @@ export function buildContainer(options: {
 
   const workflow = new CaseWorkflow(deps);
 
-  const dashboardService = new DashboardService(repository, workflow);
+  const dashboardService = new DashboardService(repository, workflow, listThemes());
   const dashboardServer = new DashboardServer(dashboardService, {
     port: options.dashboardPort,
     sitesRoot: options.sitesRoot,

@@ -8,10 +8,12 @@ export class SiteBuilderService {
   async buildSite(
     company: ProposalCaseData,
     tier: SiteTier = 'simple',
+    theme?: string,
   ): Promise<BuiltSite> {
     return this.renderer.render({
       caseId: company.id,
       tier,
+      theme,
       company,
     });
   }

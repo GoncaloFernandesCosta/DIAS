@@ -66,6 +66,48 @@ describe('OutreachService', () => {
     expect(draft.draftContent).toContain('reply');
   });
 
+  it('generates multiple distinct email variants', async () => {
+    const service = new OutreachService(
+      new TemplateMessageGenerator(),
+      new RecordingNotificationProvider(),
+    );
+    const company = makeOutdatedCompany('Casa Velha');
+    const variants = await service.draftVariants(company, 'email', 3);
+
+    expect(variants).toHaveLength(3);
+    expect(variants.every((v) => v.channel === 'email')).toBe(true);
+    expect(variants.every((v) => v.draftContent.includes('Casa Velha'))).toBe(true);
+    const subjects = new Set(variants.map((v) => v.subject));
+    expect(subjects.size).toBe(3);
+    const contents = new Set(variants.map((v) => v.draftContent));
+    expect(contents.size).toBe(3);
+  });
+
+  it('generates multiple distinct SMS variants', async () => {
+    const service = new OutreachService(
+      new TemplateMessageGenerator(),
+      new RecordingNotificationProvider(),
+    );
+    const variants = await service.draftVariants(makeOutdatedCompany(), 'sms', 3);
+
+    expect(variants).toHaveLength(3);
+    expect(variants.every((v) => v.channel === 'sms')).toBe(true);
+    const contents = new Set(variants.map((v) => v.draftContent));
+    expect(contents.size).toBe(3);
+  });
+
+  it('caps variants to six and honours a minimum of one', async () => {
+    const service = new OutreachService(
+      new TemplateMessageGenerator(),
+      new RecordingNotificationProvider(),
+    );
+    const capped = await service.draftVariants(makeOutdatedCompany(), 'email', 99);
+    expect(capped).toHaveLength(6);
+
+    const minimum = await service.draftVariants(makeOutdatedCompany(), 'email', 0);
+    expect(minimum).toHaveLength(1);
+  });
+
   it('sends to the contact email via the notification provider', async () => {
     const provider = new RecordingNotificationProvider();
     const service = new OutreachService(new TemplateMessageGenerator(), provider);
@@ -100,6 +142,9 @@ describe('OutreachService', () => {
     class CustomGenerator implements MessageGenerator {
       async draft(_ctx: any, channel: any) {
         return { channel, draftContent: 'custom draft' };
+      }
+      async draftVariants(_ctx: any, channel: any, count: number) {
+        return Array.from({ length: count }, () => ({ channel, draftContent: 'variant' }));
       }
     }
     const provider = new RecordingNotificationProvider();

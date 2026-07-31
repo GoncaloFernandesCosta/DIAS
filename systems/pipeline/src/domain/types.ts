@@ -4,6 +4,7 @@ export interface PipelineRunParams {
   keywords?: string;
   limit?: number;
   tier?: 'simple' | 'complex';
+  theme?: string;
 }
 
 export interface ProspectInput {

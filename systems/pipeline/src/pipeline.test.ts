@@ -60,6 +60,10 @@ function makeWorkflow(repository: CaseRepository, eventBus: InMemoryEventBus) {
         const d = await outreach.draft(company as never, channel);
         return { channel: d.channel, subject: d.subject, draftContent: d.draftContent };
       },
+      draftVariants: async (company, channel, count) => {
+        const v = await outreach.draftVariants(company as never, channel, count);
+        return v.map((x) => ({ channel: x.channel, subject: x.subject, draftContent: x.draftContent }));
+      },
     },
     sendStep: {
       send: async (company, draft) => {
@@ -137,6 +141,37 @@ describe('CaseWorkflow', () => {
     expect(summary.cases.every((c) => c.currentState === ProposalState.PROPOSAL_SENT)).toBe(true);
   });
 
+  it('prospectOnly stops at QUALIFIED without building or sending', async () => {
+    const repo = new MemoryRepository();
+    const bus = new InMemoryEventBus();
+    const wf = makeWorkflow(repo, bus);
+
+    const summary = await wf.prospectOnly({ industry: 'restaurants', region: 'Lisbon', limit: 10 });
+
+    expect(summary.total).toBe(2);
+    expect(summary.sent).toBe(0);
+    expect(summary.failed).toBe(0);
+    expect(summary.cases.every((c) => c.currentState === ProposalState.QUALIFIED)).toBe(true);
+    const all = repo.findAll();
+    expect(all.every((c) => c.getData().currentState === ProposalState.QUALIFIED)).toBe(true);
+  });
+
+  it('runThrough stops at SITE_DRAFT_READY when stopAt is site', async () => {
+    const repo = new MemoryRepository();
+    const bus = new InMemoryEventBus();
+    const wf = makeWorkflow(repo, bus);
+
+    const summary = await wf.runThrough(
+      { industry: 'restaurants', region: 'Lisbon', limit: 10 },
+      'site',
+    );
+
+    expect(summary.total).toBe(2);
+    expect(summary.sent).toBe(0);
+    expect(summary.failed).toBe(0);
+    expect(summary.cases.every((c) => c.currentState === ProposalState.SITE_DRAFT_READY)).toBe(true);
+  });
+
   it('draft + approve + send walks the tail of the state machine', async () => {
     const repo = new MemoryRepository();
     const bus = new InMemoryEventBus();
@@ -183,6 +218,83 @@ describe('CaseWorkflow', () => {
     const repo = new MemoryRepository();
     const wf = makeWorkflow(repo, new InMemoryEventBus());
     await expect(wf.buildSite('missing-id', 'simple')).rejects.toThrow(/not found/);
+  });
+
+  it('rebuilds a site with a different theme without changing state', async () => {
+    const repo = new MemoryRepository();
+    const bus = new InMemoryEventBus();
+    const wf = makeWorkflow(repo, bus);
+
+    const entity = wf.ingestProspect({
+      companyName: 'Rebuild Co',
+      website: 'https://rebuild.example.com',
+      contactEmail: 'r@b.com',
+      siteOutdated: true,
+    });
+    const id = entity.getData().id;
+    await wf.buildSite(id, 'simple');
+    expect(repo.findById(id)?.getData().metadata.siteTheme).toBeUndefined();
+
+    const rebuilt = await wf.rebuildSite(id, 'complex', 'deep-navy');
+    expect(rebuilt.getData().currentState).toBe(ProposalState.SITE_DRAFT_READY);
+    expect(rebuilt.getData().metadata.siteTheme).toBe('deep-navy');
+    expect(rebuilt.getData().metadata.siteTier).toBe('complex');
+  });
+
+  it('generates draft variants and picks one', async () => {
+    const repo = new MemoryRepository();
+    const bus = new InMemoryEventBus();
+    const wf = makeWorkflow(repo, bus);
+
+    const entity = wf.ingestProspect({
+      companyName: 'Variant Co',
+      website: 'https://v.example.com',
+      contactEmail: 'v@b.com',
+      siteOutdated: true,
+    });
+    const id = entity.getData().id;
+    await wf.buildSite(id, 'simple');
+
+    const variants = await wf.draftVariants(id, 'email', 3);
+    expect(variants).toHaveLength(3);
+
+    const chosen = await wf.chooseDraft(id, 1, 'email');
+    expect(chosen.getData().currentState).toBe(ProposalState.PROPOSAL_DRAFTED);
+    expect(chosen.getData().metadata.draftContent).toBe(variants[1].draftContent);
+  });
+
+  it('advances a QUALIFIED case to SITE_DRAFT_READY via drag-drop', async () => {
+    const repo = new MemoryRepository();
+    const bus = new InMemoryEventBus();
+    const wf = makeWorkflow(repo, bus);
+
+    const entity = wf.ingestProspect({
+      companyName: 'Advance Co',
+      website: 'https://a.example.com',
+      contactEmail: 'a@b.com',
+      siteOutdated: true,
+    });
+    const id = entity.getData().id;
+
+    const advanced = await wf.advanceToStage(id, 'building');
+    expect(advanced.getData().currentState).toBe(ProposalState.SITE_DRAFT_READY);
+  });
+
+  it('advances a QUALIFIED case all the way to PROPOSAL_SENT via drag-drop', async () => {
+    const repo = new MemoryRepository();
+    const bus = new InMemoryEventBus();
+    const wf = makeWorkflow(repo, bus);
+
+    const entity = wf.ingestProspect({
+      companyName: 'Full Co',
+      website: 'https://f.example.com',
+      contactEmail: 'f@b.com',
+      siteOutdated: true,
+    });
+    const id = entity.getData().id;
+
+    const advanced = await wf.advanceToStage(id, 'outreach');
+    expect(advanced.getData().currentState).toBe(ProposalState.PROPOSAL_SENT);
   });
 });
 

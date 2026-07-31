@@ -17,6 +17,14 @@ export class OutreachService {
     return this.generator.draft({ company }, channel);
   }
 
+  async draftVariants(
+    company: ProposalCaseData,
+    channel: MessageChannel = 'email',
+    count = 3,
+  ): Promise<DraftMessage[]> {
+    return this.generator.draftVariants({ company }, channel, count);
+  }
+
   async send(company: ProposalCaseData, draft: DraftMessage): Promise<SentResult> {
     const to = company.contactEmail ?? company.contactPhone;
     if (!to) {

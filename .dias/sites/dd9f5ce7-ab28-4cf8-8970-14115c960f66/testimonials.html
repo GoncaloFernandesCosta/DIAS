@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Padaria Central — Deep Navy</title>
+<style>
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; color: #0f172a; background: #ffffff; line-height: 1.7; }
+img, svg { max-width: 100%; }
+h1, h2, h3, h4 { font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.2; }
+
+/* Header */
+.site-header {
+  position: sticky; top: 0; z-index: 20;
+  background: #0f172a; color: #f8fafc;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; padding: .9rem clamp(1rem, 4vw, 3rem);
+  box-shadow: 0 1px 8px rgba(0,0,0,.12);
+}
+.brand { display: flex; align-items: center; gap: .6rem; font-weight: 800; font-size: 1.05rem; color: #f8fafc; text-decoration: none; }
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+  background: #f59e0b; color: #0f172a; font-size: .8rem; font-weight: 800;
+}
+.site-nav { display: flex; gap: .25rem; flex-wrap: wrap; }
+.site-nav a {
+  color: #f8fafc; opacity: .82; text-decoration: none;
+  font-size: .85rem; font-weight: 600; padding: .4rem .7rem; border-radius: 8px;
+  transition: opacity .12s, background .12s;
+}
+.site-nav a:hover { opacity: 1; background: rgba(255,255,255,.12); }
+.site-nav a.active { opacity: 1; background: rgba(255,255,255,.18); }
+
+/* Sections */
+.section { padding: clamp(2.5rem, 6vw, 5rem) clamp(1rem, 4vw, 3rem); }
+.section-alt { background: #eff6ff; }
+.section-soft { background: #f8fafc; }
+.container { max-width: 1100px; margin: 0 auto; }
+.section-head { text-align: center; max-width: 640px; margin: 0 auto 2.5rem; }
+.section-head .eyebrow { color: #1e3a8a; font-weight: 700; font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; }
+.section-head h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); margin: .4rem 0 .6rem; color: #0f172a; }
+.section-head p { color: #64748b; }
+
+/* Hero */
+.hero { padding: clamp(3rem, 8vw, 6rem) clamp(1rem, 4vw, 3rem); color: #0f172a; }
+.hero .container { display: grid; gap: 2rem; align-items: center; }
+.hero-grid { grid-template-columns: 1.2fr .8fr; }
+.hero-split .hero-side { order: 2; }
+@media (max-width: 820px) { .hero-grid { grid-template-columns: 1fr; } .hero-split .hero-side { order: 0; } }
+.hero.gradient { background: linear-gradient(135deg, #172554, #1e3a8a); color: #fff; }
+.hero.gradient h1 { color: #fff; }
+.hero.gradient .muted { color: rgba(255,255,255,.85); }
+.hero.dark { background: #0f172a; color: #f8fafc; }
+.hero.dark h1 { color: #f8fafc; }
+.hero.dark .muted { color: rgba(255,255,255,.8); }
+.hero.minimal { background: #ffffff; text-align: center; }
+.hero.minimal .container { max-width: 760px; }
+.hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin: .6rem 0 1rem; }
+.hero .tagline { font-size: 1.1rem; color: #64748b; max-width: 540px; }
+.hero.gradient .tagline, .hero.dark .tagline { color: rgba(255,255,255,.85); }
+.hero.minimal .tagline { margin: 0 auto; }
+.hero-side { display: flex; justify-content: center; }
+.hero-card {
+  background: rgba(255,255,255,.95); color: #0f172a; border-radius: 6px;
+  padding: 1.4rem; width: 100%; max-width: 340px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.18); border: 1px solid rgba(255,255,255,.4);
+}
+.hero-card h3 { color: #1e3a8a; margin-bottom: .8rem; }
+.hero-card ul { list-style: none; }
+.hero-card li { display: flex; gap: .55rem; align-items: flex-start; padding: .45rem 0; font-size: .9rem; }
+.hero-card svg { color: #f59e0b; flex-shrink: 0; margin-top: .15rem; }
+.hero-card .hours { border-top: 1px solid #dbeafe; margin-top: .8rem; padding-top: .8rem; font-size: .85rem; color: #64748b; }
+
+/* Buttons */
+.btn {
+  display: inline-block; padding: .7rem 1.5rem; border-radius: 10px; text-decoration: none;
+  font-weight: 700; font-size: .92rem; transition: transform .12s, box-shadow .12s;
+}
+.btn.solid { background: #f59e0b; color: #0f172a; box-shadow: 0 6px 16px rgba(0,0,0,.15); }
+.btn.solid:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0,0,0,.2); }
+.btn.outline { border: 2px solid #1e3a8a; color: #1e3a8a; }
+.btn.outline:hover { background: #1e3a8a; color: #ffffff; }
+.btn.hero-solid { background: #fff; color: #0f172a; }
+.btn.hero-outline { border: 2px solid #fff; color: #fff; }
+.cta-buttons { display: flex; gap: .8rem; margin-top: 1.6rem; flex-wrap: wrap; }
+
+/* Feature grid */
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; }
+.feature-card {
+  background: #ffffff; border: 1px solid #dbeafe; border-radius: 6px;
+  padding: 1.4rem; transition: transform .15s, box-shadow .15s;
+}
+.feature-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,.08); }
+.feature-icon {
+  width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+  background: #eff6ff; color: #1e3a8a; margin-bottom: .9rem;
+}
+.feature-card h3 { font-size: 1rem; margin-bottom: .4rem; }
+.feature-card p { font-size: .88rem; color: #64748b; }
+
+/* Services list */
+.services-list { display: grid; gap: .7rem; max-width: 720px; margin: 0 auto; }
+.service-item {
+  display: flex; align-items: center; gap: .9rem; background: #ffffff;
+  border: 1px solid #dbeafe; border-radius: 12px; padding: 1rem 1.2rem;
+}
+.service-item svg { color: #1e3a8a; flex-shrink: 0; }
+.service-item span { font-weight: 600; }
+.service-item .arrow { margin-left: auto; color: #64748b; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: center; }
+.stat .value { font-size: 2rem; font-weight: 800; color: #1e3a8a; }
+.stat .label { color: #64748b; font-size: .85rem; }
+
+/* Testimonials */
+.quote-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.2rem; }
+.quote-card { background: #ffffff; border: 1px solid #dbeafe; border-radius: 6px; padding: 1.4rem; }
+.quote-card .stars { color: #f59e0b; letter-spacing: 2px; margin-bottom: .6rem; }
+.quote-card p { font-style: italic; color: #0f172a; }
+.quote-card .who { margin-top: .9rem; font-weight: 700; font-size: .85rem; color: #1e3a8a; }
+
+/* About */
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: center; }
+@media (max-width: 820px) { .about-grid { grid-template-columns: 1fr; } }
+.about-card { background: #eff6ff; border-radius: 6px; padding: 1.6rem; border: 1px solid #dbeafe; }
+.about-card h3 { color: #1e3a8a; margin-bottom: .6rem; }
+
+/* Contact */
+.contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+@media (max-width: 820px) { .contact-grid { grid-template-columns: 1fr; } }
+.contact-list { list-style: none; display: grid; gap: .8rem; }
+.contact-list li { display: flex; gap: .7rem; align-items: center; }
+.contact-list svg { color: #1e3a8a; flex-shrink: 0; }
+.contact-list a { color: #0f172a; text-decoration: none; }
+.contact-list a:hover { text-decoration: underline; }
+.contact-card { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 6px; padding: 1.5rem; }
+.contact-card h3 { color: #1e3a8a; margin-bottom: .8rem; }
+
+/* CTA band */
+.cta-band { background: linear-gradient(135deg, #1e3a8a, #f59e0b); color: #0f172a; text-align: center; padding: clamp(2.5rem, 6vw, 4rem) 1rem; }
+.cta-band h2 { font-size: clamp(1.5rem, 3.5vw, 2.2rem); margin-bottom: .6rem; }
+.cta-band p { opacity: .9; margin-bottom: 1.4rem; }
+.cta-band .btn { background: #ffffff; color: #1e3a8a; }
+
+/* Footer */
+.site-footer { background: #0f172a; color: #f8fafc; padding-top: 2.5rem; }
+.footer-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1.4fr 1fr; gap: 2rem; padding: 0 1rem 2rem; }
+@media (max-width: 700px) { .footer-inner { grid-template-columns: 1fr; } }
+.footer-inner strong { font-size: 1.05rem; }
+.footer-inner p { opacity: .75; font-size: .88rem; margin-top: .4rem; }
+.footer-contact { display: grid; gap: .4rem; font-size: .85rem; }
+.footer-contact a { color: #f8fafc; opacity: .9; }
+.footer-contact a:hover { opacity: 1; }
+.footer-bottom { border-top: 1px solid rgba(255,255,255,.15); text-align: center; padding: 1rem; font-size: .8rem; opacity: .7; }
+
+
+</style>
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="index.html"><span class="brand-mark">PC</span><span>Padaria Central</span></a>
+  <nav class="site-nav"><a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="testimonials.html" class="active">Testimonials</a><a href="contact.html">Contact</a></nav>
+</header>
+<main>
+
+
+<section class="section section-alt" style="padding-bottom:0">
+  <div class="container section-head" style="margin-bottom:1.5rem">
+    <span class="eyebrow">Padaria Central</span>
+    <h2>Testimonials</h2>
+    <p>The neighbourhood bakery you can trust</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Testimonials</span>
+      <h2>What people say</h2>
+    </div>
+    <div class="quote-grid">
+      
+      <div class="quote-card">
+        <div class="stars">★★★★★</div>
+        <p>“Their sourdough is legendary around here. You simply have not had bread until you have tried {company}.”</p>
+        <div class="who">Local customer</div>
+      </div>
+      <div class="quote-card">
+        <div class="stars">★★★★★</div>
+        <p>“We have worked with X for years and the quality never dips. Highly recommended to anyone in the area.”</p>
+        <div class="who">Repeat client</div>
+      </div>
+      <div class="quote-card">
+        <div class="stars">★★★★★</div>
+        <p>“Professional, responsive and genuinely invested in doing a great job. Five stars.”</p>
+        <div class="who">Verified review</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="container stats-grid">
+    <div class="stat"><div class="value">25+</div><div class="label">Daily specials</div></div><div class="stat"><div class="value">5am</div><div class="label">First bake of the day</div></div><div class="stat"><div class="value">40+</div><div class="label">Years in the community</div></div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="container">
+    <h2>Ready to work with Padaria Central?</h2>
+    <p>Discover why Lisbon trusts us for bakeries services.</p>
+    <a class="btn" href="contact.html">Contact us today</a>
+  </div>
+</section>
+
+</main>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <strong>Padaria Central</strong>
+      <p>The neighbourhood bakery you can trust</p>
+    </div>
+    <div class="footer-contact">
+      <span><a href="mailto:contact@padariacentral.wordpress.com">contact@padariacentral.wordpress.com</a></span>
+      
+      <span>https://padariacentral.wordpress.com</span>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 Padaria Central · Lisbon</div>
+</footer>
+</body>
+</html>
