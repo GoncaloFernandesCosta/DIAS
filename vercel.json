@@ -2,5 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "pnpm --filter @dias/web build",
-  "outputDirectory": "web/.next"
+  "outputDirectory": ".next"
 }
