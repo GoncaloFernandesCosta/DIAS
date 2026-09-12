@@ -3,3 +3,13 @@ dist
 *.tsbuildinfo
 .env
 .env.local
+
+# Runtime data
+.dias
+
+# Next.js
+web/.next
+web/out
+
+# Test artifacts
+systems/pipeline/.dias-test-sites

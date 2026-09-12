@@ -2,3 +2,6 @@ packages:
   - 'shared/*'
   - 'systems/*'
   - 'cli'
+  - 'web'
+allowBuilds:
+  unrs-resolver: set this to true or false

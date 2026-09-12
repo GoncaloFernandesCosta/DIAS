@@ -6,7 +6,9 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
-    "cli": "node cli/dist/index.js"
+    "cli": "node cli/dist/index.js",
+    "dev": "pnpm --filter @dias/web dev",
+    "web": "pnpm --filter @dias/web start"
   },
   "engines": {
     "node": ">=18"
