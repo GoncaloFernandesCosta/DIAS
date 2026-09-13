@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { AUTH_SECRET } from '@/lib/auth-config';
 
 const protectedPaths = ['/dashboard', '/search', '/settings'];
 
@@ -9,7 +10,7 @@ export async function middleware(request: NextRequest) {
 
   if (!isProtected) return NextResponse.next();
 
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req: request, secret: AUTH_SECRET });
 
   if (!token) {
     const url = new URL('/login', request.url);

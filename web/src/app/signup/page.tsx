@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 
@@ -17,22 +18,37 @@ export default function SignupPage() {
     setLoading(true);
     setError('');
 
-    // Demo signup: create the account locally in localStorage then sign in.
-    if (!name.trim() || !email.trim() || password.length < 8) {
-      setError('Fill in all fields (password must be 8+ characters).');
-      setLoading(false);
-      return;
-    }
-
     try {
-      localStorage.setItem(
-        'leadpilot:account',
-        JSON.stringify({ name, email, password }),
-      );
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError((data as { error?: string }).error ?? 'Could not create your account.');
+        setLoading(false);
+        return;
+      }
+
+      const signInRes = await signIn('credentials', {
+        redirect: false,
+        email: email.trim(),
+        password,
+      });
+
+      if (signInRes?.error) {
+        setError('Account created — please sign in with your new credentials.');
+        router.push('/login');
+        setLoading(false);
+        return;
+      }
+
       router.push('/dashboard');
+      router.refresh();
     } catch {
       setError('Something went wrong. Please try again.');
-    } finally {
       setLoading(false);
     }
   }

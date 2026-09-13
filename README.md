@@ -20,9 +20,12 @@ cp .env.example web/.env.local
 pnpm dev            # http://localhost:3000
 ```
 
-**Demo login (no setup needed):** `demo@leadpilot.io` / `demo1234`
+**Works out of the box — zero cost, zero setup:**
+- **Demo login:** `demo@leadpilot.io` / `demo1234` (or click *"Use demo account instantly"* on the login page)
+- **Free sign-up:** create your own account in the app (email + password) — no external service needed
+- **Demo Search source:** returns realistic leads instantly, so you can try the whole product before adding any API keys
 
-The app ships with a built-in **Demo Search** source that returns realistic leads instantly, so you can try the whole product before adding any API keys.
+> Google OAuth and real lead APIs are optional — they only light up once you add their (free) credentials.
 
 ## Features
 
@@ -84,11 +87,41 @@ No other changes needed — the service aggregates, deduplicates and enriches au
 | `APOLLO_API_KEY` | B2B contacts |
 | `CRUNCHBASE_API_KEY` | Company / funding data |
 | `SERP_API_KEY` | Google Search results |
-| `NEXTAUTH_SECRET` / `NEXTAUTH_URL` | Auth |
+| `NEXTAUTH_SECRET` | Auth token secret. **Optional — a safe default is bundled** so demo/sign-up auth works with zero config. Set your own in production. |
+| `NEXTAUTH_URL` | Only needed for local dev (`http://localhost:3000`). **Do not set this on Vercel** — it is auto-detected. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional Google OAuth (see below) |
 | `DEMO_EMAIL` / `DEMO_PASSWORD` | Demo credentials (default `demo@leadpilot.io` / `demo1234`) |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional Google OAuth |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Optional extra account |
+| `DIAS_DATA_DIR` | Override where leads/accounts are stored (defaults: local `.dias/data`, Vercel `/tmp/leadpilot`) |
 
 > Lead search keys are read server-side and never sent to the browser.
+
+### Google sign-in (free)
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com) → create a project (or pick one).
+2. **APIs & Services → OAuth consent screen** → choose **External** → fill app name + your email.
+3. **Credentials → Create credentials → OAuth client ID → Web application.**
+4. Add an *Authorized redirect URI*: `https://<your-vercel-domain>/api/auth/callback/google` (and `http://localhost:3000/api/auth/callback/google` for local dev).
+5. Copy the Client ID / Secret into your env or Vercel Project Settings → Environment Variables as `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+
+### Free lead-data options (all have free tiers)
+
+| Source | Where to get a free key |
+|--------|------------------------|
+| Google Places | [Google Maps Platform](https://console.cloud.google.com/marketplace/product/google/places-backend.googleapis.com) — free trial credit, then ~$200/mo free allowance (Places API) |
+| Google Search (SERP) | [SerpApi](https://serpapi.com) — 100 free searches/month, or use [value serp](https://www.valueserp.com) |
+| Hunter.io | [hunter.io](https://hunter.io) — 50 free email verifications/mo |
+| Apollo.io | [apollo.io](https://apollo.io) — full web app, free membership; API keys on higher plans |
+| Crunchbase | [crunchbase.com](https://developer.crunchbase.com) — API requires approval |
+| Facebook/Meta | [developers.facebook.com](https://developers.facebook.com) — Graph API access requires an app + review |
+
+Until a real key is configured, the **Demo** source keeps every feature testable.
+
+### Deploying to Vercel
+
+- The repo is configured for Vercel: slim monorepo build (`web` + `lead-sources`), output in `web/.next`.
+- **Auth just works on the deployed site** (bundled secret fallback + demo account). You only need env vars for the *optional* items above.
+- Demo reminder: on the free serverless plan, leads/accounts live in the ephemeral `/tmp` and reset when the app redeploys. For real persistent data, add a free PostgreSQL (e.g. [Neon](https://neon.tech) or [Supabase](https://supabase.com)) and we can switch the stores to rows.
 
 ## Original D.I.A.S CLI (still available)
 

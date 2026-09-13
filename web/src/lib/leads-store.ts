@@ -1,11 +1,10 @@
 import { promises as fs } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { LeadResult } from '@dias/lead-sources';
 import { SavedLead } from '@/types';
+import { getDataDir } from '@/lib/data-dir';
 
-const DATA_FILE = process.env.DIAS_DATA_DIR
-  ? resolve(process.env.DIAS_DATA_DIR, 'web-leads.json')
-  : resolve(process.cwd(), '.dias', 'data', 'web-leads.json');
+const DATA_FILE = join(getDataDir(), 'web-leads.json');
 
 async function readAll(): Promise<SavedLead[]> {
   try {
@@ -17,7 +16,7 @@ async function readAll(): Promise<SavedLead[]> {
 }
 
 async function writeAll(leads: SavedLead[]): Promise<void> {
-  await fs.mkdir(join(DATA_FILE, '..'), { recursive: true });
+  await fs.mkdir(getDataDir(), { recursive: true });
   await fs.writeFile(DATA_FILE, JSON.stringify(leads, null, 2), 'utf8');
 }
 
